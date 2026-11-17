@@ -6,9 +6,9 @@ from app.api import audio, climate, imagery, map
 app = FastAPI(title="Earth Jukebox", version="1.0.0")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
-    allow_methods=["GET", "POST"],
-    allow_headers=["Content-Type"],
+    allow_origins=["https://earthify.pages.dev", "http://localhost:5173"],
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 app.include_router(map.router, prefix="/api")
 app.include_router(imagery.router, prefix="/api")
