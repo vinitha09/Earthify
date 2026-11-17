@@ -24,7 +24,7 @@ export const createSoundscape = (lat, lon, factors = []) => request("/api/sonify
 });
 
 export const retrieveMonthlyClimate = (lat, lon) =>
-  request(`/api/climate/?lat=${lat}&lon=${lon}`);
+  request(`/api/climate?lat=${lat}&lon=${lon}`);
 
 export const searchLocations = (query) =>
   request(`/api/search?q=${encodeURIComponent(query)}`);
