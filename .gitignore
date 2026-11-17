@@ -1,0 +1,30 @@
+# Python
+.venv/
+venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Generated backend data
+/backend/.cache/
+/backend/generated_audio/
+
+# Frontend
+node_modules/
+dist/
+build/
+
+# Environment variables
+.env.example
+.env
+
+# Browser temporary files
+.edge-pdf-profile/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+Thumbs.db
+.DS_Store
