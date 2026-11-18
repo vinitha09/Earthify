@@ -4,8 +4,8 @@ from pathlib import Path
 
 BACKEND_DIR = Path(__file__).resolve().parents[1]
 
-# Vercel: use writable temporary storage.
-# Local development: use folders inside the backend directory.
+# Vercel has a read-only application directory.
+# Use /tmp for temporary runtime files.
 if os.getenv("VERCEL"):
     STORAGE_DIR = Path("/tmp/earthify")
 else:

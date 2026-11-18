@@ -1,3 +1,6 @@
+import hashlib
+import json
+from app.config import CACHE_DIR
 from app.services.http_service import get_json
 
 NOMINATIM = "https://nominatim.openstreetmap.org"
@@ -135,42 +138,131 @@ def major_feature_name(data: dict) -> tuple[str, str] | None:
     return None
 
 
-async def reverse_geocode(lat: float, lon: float) -> dict:
-    try:
-        detail = await get_json(f"{NOMINATIM}/reverse", {
-            "lat": lat, "lon": lon, "format": "jsonv2", "zoom": 10,
-            "addressdetails": 1, "accept-language": "en",
-        })
-        country_result = await get_json(f"{NOMINATIM}/reverse", {
-            "lat": lat, "lon": lon, "format": "jsonv2", "zoom": 3,
-            "addressdetails": 1, "accept-language": "en",
-        })
-        country_address = country_result.get("address", {})
-        country = country_address.get("country") or detail.get("address", {}).get("country")
-        if country:
-            return {"name": country, "kind": "country", "source": "OpenStreetMap Nominatim"}
 
-        feature = major_feature_name(detail)
-        if feature:
-            name, kind = feature
-            return {"name": name, "kind": kind, "source": "OpenStreetMap Nominatim"}
+
+async def reverse_geocode(lat: float, lon: float) -> dict:
+    cache_key = hashlib.sha256(
+        f"{lat:.4f}:{lon:.4f}".encode()
+    ).hexdigest()
+
+    cache_path = CACHE_DIR / f"location-{cache_key}.json"
+
+    # 1. Check cache first
+    if cache_path.exists():
+        try:
+            return json.loads(
+                cache_path.read_text(encoding="utf-8")
+            )
+        except (OSError, json.JSONDecodeError):
+            pass
+
+    # 2. Fetch location from Nominatim
+    try:
+        detail = await get_json(
+            f"{NOMINATIM}/reverse",
+            {
+                "lat": lat,
+                "lon": lon,
+                "format": "jsonv2",
+                "zoom": 10,
+                "addressdetails": 1,
+                "accept-language": "en",
+            },
+        )
 
         address = detail.get("address", {})
-        ocean = address.get("ocean") or address.get("sea")
-        if ocean and ("ocean" in ocean.casefold() or "sea" in ocean.casefold()):
-            return {"name": ocean, "kind": "ocean or sea", "source": "OpenStreetMap Nominatim"}
-        if lat >= 65 or lat <= -60:
-            name = "Arctic Region" if lat >= 65 else "Antarctic Region"
-            return {"name": name, "kind": "polar region", "source": "coordinate region"}
-        continent = country_address.get("continent") or address.get("continent")
-        if continent:
-            return {"name": continent, "kind": "continent", "source": "OpenStreetMap Nominatim"}
-        return {"name": ocean_name(lat, lon), "kind": "ocean (approximate)", "source": "coordinate region"}
+        country = address.get("country")
+
+        if country:
+            result = {
+                "name": country,
+                "kind": "country",
+                "source": "OpenStreetMap Nominatim",
+            }
+
+        else:
+            feature = major_feature_name(detail)
+
+            if feature:
+                name, kind = feature
+                result = {
+                    "name": name,
+                    "kind": kind,
+                    "source": "OpenStreetMap Nominatim",
+                }
+
+            else:
+                ocean = (
+                    address.get("ocean")
+                    or address.get("sea")
+                )
+
+                if ocean:
+                    result = {
+                        "name": ocean,
+                        "kind": "ocean or sea",
+                        "source": "OpenStreetMap Nominatim",
+                    }
+
+                elif lat >= 65 or lat <= -60:
+                    name = (
+                        "Arctic Region"
+                        if lat >= 65
+                        else "Antarctic Region"
+                    )
+                    result = {
+                        "name": name,
+                        "kind": "polar region",
+                        "source": "coordinate region",
+                    }
+
+                else:
+                    continent = address.get("continent")
+
+                    if continent:
+                        result = {
+                            "name": continent,
+                            "kind": "continent",
+                            "source": "OpenStreetMap Nominatim",
+                        }
+                    else:
+                        result = {
+                            "name": ocean_name(lat, lon),
+                            "kind": "ocean (approximate)",
+                            "source": "coordinate region",
+                        }
+
+        # 3. Save successful result to cache
+        try:
+            cache_path.write_text(
+                json.dumps(result),
+                encoding="utf-8",
+            )
+        except OSError:
+            pass
+
+        return result
+
     except Exception:
+        # 4. Fallback if Nominatim fails
         if lat >= 65 or lat <= -60:
-            name = "Arctic Region" if lat >= 65 else "Antarctic Region"
-            return {"name": name, "kind": "polar region", "source": "coordinate region"}
-        return {"name": ocean_name(lat, lon), "kind": "ocean (approximate)", "source": "coordinate region"}
+            name = (
+                "Arctic Region"
+                if lat >= 65
+                else "Antarctic Region"
+            )
+            return {
+                "name": name,
+                "kind": "polar region",
+                "source": "coordinate region",
+            }
+
+        return {
+            "name": ocean_name(lat, lon),
+            "kind": "ocean (approximate)",
+            "source": "coordinate region",
+        }
+
 
 
 async def search_locations(query: str) -> list[dict]:
