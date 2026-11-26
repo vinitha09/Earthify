@@ -138,7 +138,7 @@ export default function App() {
     {!coordinates && <header className="brand-lockup">
       <h1 className="app-title">EARTHIFY</h1>
       <p className="app-tagline">Explore climate. Hear the Earth.</p>
-      <p className="app-description">Choose a place on the globe to turn its recent temperature, rainfall, wind, and humidity into an immersive soundscape.</p>
+      <p className="app-description">Explore NASA climate data and satellite imagery through sound. Choose a place to hear temperature, rainfall, wind, and humidity as an immersive soundscape—an alternative way to experience Earth observation.</p>
     </header>}
     <VoiceAssistant key={speechRevision} message={speech} rate={speechRate} onFinished={finishSpeech} />
     <div className="globe-stage">
