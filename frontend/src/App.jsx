@@ -134,10 +134,11 @@ export default function App() {
     announceSpeech(`Let's take a journey through the climate of ${location.name}. ${graphStory} ${locationTagline(location.kind)}.`, true);
   }
 
-  return <main className="earth-app">
+  return <main className={`earth-app${coordinates ? " has-selection" : " home-screen"}`}>
     {!coordinates && <header className="brand-lockup">
       <h1 className="app-title">EARTHIFY</h1>
-      <p className="app-tagline">Atmosphere into music</p>
+      <p className="app-tagline">Explore climate. Hear the Earth.</p>
+      <p className="app-description">Choose a place on the globe to turn its recent temperature, rainfall, wind, and humidity into an immersive soundscape.</p>
     </header>}
     <VoiceAssistant key={speechRevision} message={speech} rate={speechRate} onFinished={finishSpeech} />
     <div className="globe-stage">
